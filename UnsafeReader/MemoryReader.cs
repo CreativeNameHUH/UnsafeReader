@@ -5,7 +5,7 @@ using System.Text;
 
 namespace UnsafeReader
 {
-    enum AccessLevels
+    internal enum AccessLevels
     {
         PROCESS_VM_READ = 0x0010,
         PROCESS_VM_WRITE = 0x0020,
@@ -18,16 +18,17 @@ namespace UnsafeReader
         private static extern IntPtr OpenProcess(int accessType, bool inheritHandle, int processId);
 
         [DllImport("kernel32.dll")]
-        private static extern bool ReadProcessMemory(int process, ulong baseAddress, byte[] buffer, int size,
+        private static extern bool ReadProcessMemory(int process, ulong address, byte[] buffer, int size,
             ref int numberOfBytesRead);
         
         [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool WriteProcessMemory(int process, ulong baseAddress, byte[] buffer, int size,
+        private static extern bool WriteProcessMemory(int process, ulong address, byte[] buffer, int size,
             ref int numberOfBytesWritten);
 
         private Process _process;
         private IntPtr _processHandle;
 
+        // Returns a process Id and its name
         public string GetProcess(string processName)
         {
             try
@@ -42,21 +43,29 @@ namespace UnsafeReader
             return $"PID: {_process.Id.ToString()}  {processName}";
         }
 
-        public string ReadMemory(int numberOfBytes, string baseAddress)
+        // Reads memory and returns a value from the selected address with number of bytes and its hex value
+        public string ReadMemory(int numberOfBytes, string baseAddress) 
         {
             if (_process == null)
                 return "error";
             
             int bytesRead = 0;
             byte[] buffer = new byte[numberOfBytes];
+            try
+            { 
+                _processHandle = OpenProcess((int)AccessLevels.PROCESS_ALL_ACCESS, false, _process.Id);
+            }
+            catch (FormatException)
+            {
+                return "Wrong address.";
+            }
 
-            _processHandle = OpenProcess((int)AccessLevels.PROCESS_ALL_ACCESS, false, _process.Id);
-            
             ReadProcessMemory((int)_processHandle, Convert.ToUInt64(baseAddress, 16), buffer, buffer.Length, ref bytesRead);
 
             return $"{Encoding.Default.GetString(buffer)} ({bytesRead.ToString()} bytes, {BitConverter.ToString(buffer)} hex)";
         }
 
+        // Writes given value to the selected address and returns a newly added value, number of bytes and its hex value
         public string WriteMemory(string newValue, string baseAddress)
         {
             int bytesWritten = 0;
