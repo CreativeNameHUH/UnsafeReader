@@ -1,10 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 
 namespace UnsafeReader
@@ -12,7 +6,6 @@ namespace UnsafeReader
     public partial class MainForm : Form, IDisposable
     {
         private readonly string _errorNoProcess = "No process selected";
-        private bool _disposed;
         private MemoryReader _reader;
         public MainForm()
         {
@@ -57,6 +50,11 @@ namespace UnsafeReader
         private void ClearButton_Click(object sender, EventArgs e)
         {
             GC.Collect();
+            MemoryAddressBox.Text = String.Empty;
+            ProcessNameBox.Text = String.Empty;
+            NewValueBox.Text = String.Empty;
+            MemoryDumpBox.Text = String.Empty;
+
         }
     }
 }
